@@ -6,7 +6,8 @@ from datetime import datetime
 import tkinter as tk
 from tkinter import ttk
 
-class MouseWigglerGUI(tk.Tk):    def __init__(self):
+class MouseWigglerGUI(tk.Tk):
+    def __init__(self):
         super().__init__()
 
         self.running = True
@@ -18,13 +19,10 @@ class MouseWigglerGUI(tk.Tk):    def __init__(self):
         
         # Configure window
         self.title("Mouse Wiggler")
-        self.geometry("300x150")
-        self.configure(bg='white')
+        self.geometry("300x100")
+        self.configure(bg='lightgray')
         
-        # Make window stay on top
-        self.attributes('-topmost', True)
-        
-        # Create controls
+        # Create GUI elements
         self.create_widgets()
         
         # Start mouse movement thread
@@ -32,26 +30,36 @@ class MouseWigglerGUI(tk.Tk):    def __init__(self):
         self.movement_thread.start()
         
         # Bind close button
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.protocol("WM_DELETE_WINDOW", self.stop)
         
-        # Center window on screen
+        # Center window
         self.center_window()
     
-    def create_tray_icon(self):
-        # Create a simple icon (a filled circle)
-        icon_size = 64
-        icon_image = Image.new('RGB', (icon_size, icon_size), color='white')
-        drawing = ImageDraw.Draw(icon_image)
-        drawing.ellipse([8, 8, icon_size-8, icon_size-8], fill='green')
+    def center_window(self):
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f'{width}x{height}+{x}+{y}')
+    
+    def create_widgets(self):
+        # Status label
+        self.status_var = tk.StringVar(value="Running")
+        status_label = ttk.Label(self, textvariable=self.status_var)
+        status_label.pack(pady=5)
         
-        # Create system tray menu
-        menu = (
-            pystray.MenuItem("Show/Hide", self.toggle_window),
-            pystray.MenuItem("Pause/Resume", self.toggle_pause),
-            pystray.MenuItem("Exit", self.stop),
-        )
+        # Control buttons frame
+        button_frame = ttk.Frame(self)
+        button_frame.pack(pady=5)
         
-        self.icon = pystray.Icon("wiggler", icon_image, "Mouse Wiggler", menu)
+        # Pause/Resume button
+        self.toggle_button = ttk.Button(button_frame, text="Pause", command=self.toggle_pause)
+        self.toggle_button.pack(side=tk.LEFT, padx=5)
+        
+        # Exit button
+        exit_button = ttk.Button(button_frame, text="Exit", command=self.stop)
+        exit_button.pack(side=tk.LEFT, padx=5)
     
     def get_cursor_pos(self):
         point = ctypes.wintypes.POINT()
@@ -89,19 +97,17 @@ class MouseWigglerGUI(tk.Tk):    def __init__(self):
     
     def toggle_pause(self):
         self.paused = not self.paused
-        state = "paused" if self.paused else "resumed"
-        self.icon.notify(f"Mouse Wiggler {state}")
-    
-    def toggle_window(self):
-        self.hidden = not self.hidden
+        if self.paused:
+            self.status_var.set("Paused")
+            self.toggle_button.configure(text="Resume")
+        else:
+            self.status_var.set("Running")
+            self.toggle_button.configure(text="Pause")
     
     def stop(self):
         self.running = False
-        self.icon.stop()
+        self.destroy()
         sys.exit(0)
-    
-    def run(self):
-        self.icon.run()
 
 if __name__ == "__main__":
     try:
@@ -114,7 +120,7 @@ if __name__ == "__main__":
         
         # Start application
         app = MouseWigglerGUI()
-        app.run()
+        app.mainloop()
     except Exception as e:
         import traceback
         with open("error_log.txt", "w") as f:

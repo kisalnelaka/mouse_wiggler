@@ -1,2 +1,2 @@
 @echo off
-pythonw.exe wiggler_gui.py
+pythonw.exe wiggler_simple.py
